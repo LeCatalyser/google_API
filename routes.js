@@ -17,73 +17,76 @@
   the License.
 */
 
-'use strict';
+"use strict";
 
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-var models = require('./models');
-var Sequelize = require('sequelize');
+var models = require("./models");
+var Sequelize = require("sequelize");
 
 // TODO: Show spreadsheets on the main page.
-router.get('/', function(req, res, next) {
+router.get("/", function(req, res, next) {
   var options = {
-    order: [['createdAt', 'DESC']]
+    order: [["createdAt", "DESC"]]
   };
-  models.Order.findAll(options)
-  .then(function(orders) {
-    res.render('index', {
-      orders: orders
+  Sequelize.Promise
+    .all([models.Order.findAll(options), models.Spreadsheet.findAll(options)])
+    .then(function(results) {
+      res.render("index", {
+        orders: results[0],
+        spreadsheets: results[1]
+      });
     });
-  }, function(err) {
-    next(err);
-  });
 });
 
-router.get('/create', function(req, res, next) {
-  res.render('upsert');
+router.get("/create", function(req, res, next) {
+  res.render("upsert");
 });
 
-router.get('/edit/:id', function(req, res, next) {
+router.get("/edit/:id", function(req, res, next) {
   models.Order.findById(req.params.id).then(function(order) {
     if (order) {
-      res.render('upsert', {
+      res.render("upsert", {
         order: order
       });
     } else {
-      next(new Error('Order not found: ' + req.params.id));
+      next(new Error("Order not found: " + req.params.id));
     }
   });
 });
 
-router.get('/delete/:id', function(req, res, next) {
-  models.Order.findById(req.params.id)
+router.get("/delete/:id", function(req, res, next) {
+  models.Order
+    .findById(req.params.id)
     .then(function(order) {
       if (!order) {
-        throw new Error('Order not found: ' + req.params.id);
+        throw new Error("Order not found: " + req.params.id);
       }
       return order.destroy();
     })
-    .then(function() {
-      res.redirect('/');
-    }, function(err) {
-      next(err);
-    });
+    .then(
+      function() {
+        res.redirect("/");
+      },
+      function(err) {
+        next(err);
+      }
+    );
 });
 
-router.post('/upsert', function(req, res, next) {
-  models.Order.upsert(req.body).then(function() {
-    res.redirect('/');
-  }, function(err) {
-    next(err);
-  });
+router.post("/upsert", function(req, res, next) {
+  models.Order.upsert(req.body).then(
+    function() {
+      res.redirect("/");
+    },
+    function(err) {
+      next(err);
+    }
+  );
 });
 
 // TODO: Add route for creating spreadsheet.
 
-
-
 // TODO: Add route for syncing spreadsheet.
-
-
 
 module.exports = router;
